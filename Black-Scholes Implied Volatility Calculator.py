@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Tue Jun 17 18:18:10 2025
 
@@ -30,7 +31,7 @@ def C(S,t,r,D,sigma,T,E):
     -------
     np.array - Call option values
     """
-    dt = np.maximum( (T - t)/252 , 0.00001) # Annualise time (assuming 252 trading days/year) and avoid dividing by 0 later
+    dt = np.maximum( (T - t) , 0.00001) # Annualise time (assuming 252 trading days/year) and avoid dividing by 0 later
     d1 = (np.log(S / E) + (r - D + 0.5*sigma**2) * dt) / (sigma * np.sqrt(dt))
     d2 = d1 - sigma * np.sqrt(dt)
     return S * np.exp(-D * dt) * norm.cdf(d1) - E * np.exp(-r * dt) * norm.cdf(d2)
@@ -55,7 +56,7 @@ def Vega(S,t,r,D,sigma,T,E):
     -------
     np.array - Vega values of call option
     """
-    dt = np.maximum( (T - t)/252 , 0.00001) # Annualise time (assuming 252 trading days/year) and avoid dividing by 0 later
+    dt = np.maximum( (T - t) , 0.00001) # Avoid dividing by 0 later
     d1 = (np.log(S / E) + (r - D + 0.5*sigma**2) * dt) / (sigma * np.sqrt(dt))
     return S * np.sqrt(dt) * np.exp(-D * dt) * np.exp(-0.5 * d1**2) / np.sqrt(2 * np.pi)
     
@@ -80,7 +81,7 @@ def Implied_Vol(S,t,r,D,T,E,V_market,error):
     -------
     float - Implied volatility
     """
-    for i in range(2):
+    for i in range(5):  # Num iterations until convergence
         vol = np.random.uniform(0.01, 1)
         count = 0
         while count < 30:
@@ -92,7 +93,7 @@ def Implied_Vol(S,t,r,D,T,E,V_market,error):
             vol -= dv
             vol = max(vol, 0.0001)
             if abs(dv) < error:
-                return vol
+                return np.clip(vol,0.0001,5) # Prevents edge case as t -> T when S = E
             count += 1
     return np.nan  # All retries failed
 
@@ -102,27 +103,26 @@ Implied_Vol_Vector = np.vectorize(Implied_Vol)
 # Parameters
 # ----------
 
-r = 0.05            #Annualised risk-free interest rate
-D = 0.02            #Annualised dividend yield
-T = int(252 / 3)         #Time to expiry (4 months)
-E = 100             #Strike price of option
-V_market = 20       #Market value of option
-error = 0.0001        #Acceptable error in implied volatility
+r = 0.08              # Annualised risk-free interest rate
+D = 0                 # Annualised dividend yield
+T = 0.25              # Time to expiry (4 months in years)
+E = 100               # Strike price of option
+V_market = 6.51       # Market value of option
+error = 0.001         # Acceptable error in implied volatility
 
 # --------------------------------------------------------
 # 2D Plot of Implied Volatility against Time and Underlying Price
 # --------------------------------------------------------
 
 #Creating S & t arrays
-N = 51                       #Resolution of arrays = 1 day
-S = np.linspace(50,150,N+1)
-t = np.linspace(0,T,N+1)
+S = np.linspace(50,150,100) # Resolution per £1
+t = np.linspace(0,T,int(T*252))  # Resolution per day
 
 #Plotting 2D graphs
 fig, axs = plt.subplots(1,2, figsize=(10,5))
 
 #Plotting Value against t
-axs[0].plot(t , Implied_Vol_Vector(100,t,r,D,T,E,V_market,error) , color='black')
+axs[0].plot(t , Implied_Vol_Vector(101.5,t,r,D,T,E,V_market,error) , color='black')
 axs[0].set_xlabel('Time (days)')
 axs[0].set_ylabel('Implied Volatility')
 axs[0].set_title('Implied Call Option Volatility against Time (S=100)')
@@ -149,7 +149,7 @@ fig = plt.figure(figsize=(8,8))
 ax = plt.axes(projection="3d")
 
 ax.plot_surface(t_grid, S_grid ,Imp_Vol, cmap="Spectral")
-ax.set_xlabel("Time (days)")
+ax.set_xlabel("Time (years)")
 ax.set_ylabel('Underlying Value (£)')
 ax.set_zlabel('Implied Volatility')
 ax.set_title('Black-Scholes Call Option Implied Volatility Surface Plot')
