@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
+
 """
 Created on Tue Jun 17 18:18:10 2025
 
@@ -81,17 +81,17 @@ def Implied_Vol(S,t,r,D,T,E,V_market,error):
     -------
     float - Implied volatility
     """
-    for i in range(5):  # Num iterations until convergence
-        vol = np.random.uniform(0.01, 1)
+    for i in range(5):  # Num iterations attmempted until convergence
+        vol = np.random.uniform(0.01, 1)  # Avoid bias in initial volatility guess
         count = 0
-        while count < 30:
+        while count < 30: # Num loops per iteration attempted for convergence
             V = C(S, t, r, D, vol, T, E)
             vega = Vega(S, t, r, D, vol, T, E)
             if vega == 0:
                 break
             dv = (V - V_market) / vega
             vol -= dv
-            vol = max(vol, 0.0001)
+            vol = max(vol, 0.0001) # Prevent volatility <= 0
             if abs(dv) < error:
                 return np.clip(vol,0.0001,5) # Prevents edge case as t -> T when S = E
             count += 1
@@ -105,7 +105,7 @@ Implied_Vol_Vector = np.vectorize(Implied_Vol)
 
 r = 0.08              # Annualised risk-free interest rate
 D = 0                 # Annualised dividend yield
-T = 0.25              # Time to expiry (4 months in years)
+T = 2              # Time to expiry (4 months in years)
 E = 100               # Strike price of option
 V_market = 6.51       # Market value of option
 error = 0.001         # Acceptable error in implied volatility
